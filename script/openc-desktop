@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+umask 077
+
+project_root="$(dirname -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")")"
+bun_path="${HOME}/.bun/bin/bun"
+if [[ ! -x "$bun_path" ]]; then
+  bun_path="$(command -v bun)"
+fi
+
+log_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/opencode-project"
+mkdir -p -- "$log_dir"
+exec "$bun_path" "$project_root/script/dev.ts" desktop "$@" >>"$log_dir/desktop.log" 2>&1

@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -eq 0 || "$1" == --help ]]; then
+  echo 'Uso: openc-direct <ejecutable> [argumentos...]'
+  echo 'Registra una exclusión persistente en ExpressVPN y ejecuta el programa.'
+  echo 'Ejemplos: openc-direct curl https://example.com'
+  echo '          openc-direct firefox --new-window https://example.com'
+  echo 'La regla se aplica a todo el ejecutable, también fuera de esta sesión.'
+  exit 0
+fi
+
+executable="$(type -P -- "$1")" || { echo "Ejecutable no encontrado: $1" >&2; exit 127; }
+executable="$(readlink -f -- "$executable")"
+shift
+rules="$(expressvpnctl get split-app)"
+while IFS= read -r rule; do
+  [[ "$rule" == vpn:* ]] || continue
+  protected="$(readlink -f -- "${rule#vpn:}")"
+  if [[ "$protected" == "$executable" ]]; then
+    echo 'Este ejecutable tiene una regla Solo VPN. No se modifica; usa otro ejecutable para la tarea directa.' >&2
+    exit 1
+  fi
+done <<< "$rules"
+
+expressvpnctl set split-app "bypass:$executable" >&2
+echo "Exclusión configurada para $executable. Si ya estaba abierto, ciérralo y vuelve a iniciarlo para aplicar la regla." >&2
+exec "$executable" "$@"

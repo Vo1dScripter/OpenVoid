@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+project_root="$(dirname -- "$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")")"
+bun_path="${HOME}/.bun/bin/bun"
+if [[ ! -x "$bun_path" ]]; then
+  bun_path="$(command -v bun)"
+fi
+
+exec "$bun_path" "$project_root/script/dev.ts" cli "$@"
